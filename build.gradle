@@ -41,7 +41,7 @@ mainClassName = 'org.radicaldelta.ranger.Ranger'
 blossom {
     def loc = 'src/main/java/org/radicaldelta/ranger/Metadata.java'
 
-    replaceToken '${name}', project.name, loc
+    replaceToken '${name}', project.name.toUpperCase(), loc
     replaceToken '${description}', project.description, loc
     replaceToken '${url}', project.url, loc
     replaceToken '${gitHash}', getGitHash(), loc

@@ -25,18 +25,19 @@
 
 package org.radicaldelta.ranger;
 
-// TODO actually write the class
 /**
- * .
+ * Provide global metadata for Ranger.
  */
-public class Ranger {
+public final class Metadata {
 
-    /**
-     * .
-     * @param args .
-     */
-    public static void main(String[] args) {
+    public static final String DESCRIPTION = "${description}";
+    public static final String GIT_HASH = "${gitHash}";
+    public static final String NAME = "${name}";
+    public static final String URL = "${url}";
+    public static final String VERSION = "${version}";
 
+    // No need to initialize
+    private Metadata() {
     }
 
 }
