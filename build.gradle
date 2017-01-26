@@ -1,0 +1,165 @@
+import java.time.LocalDate
+
+plugins {
+    id 'application'
+    id 'maven'
+    id 'checkstyle'
+    id 'findbugs'
+    id 'idea'
+    id 'eclipse'
+    id 'ninja.miserable.blossom' version '1.0.1'
+    id 'net.minecrell.licenser' version '0.3'
+    id 'com.github.johnrengelman.shadow' version '1.2.4'
+}
+
+version = getGitHash() + '-' + '0.1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.pircbotx:pircbotx:' + project.pircbotx
+    compile 'ninja.leaping.configurate:configurate-hocon:' + project.configurate_hocon
+    compile 'ninja.leaping.configurate:configurate-gson:' + project.configurate_gson
+    compile 'ch.qos.logback:logback-classic:' + project.logback_classic
+    compile 'com.google.code.findbugs:jsr305:' + project.jsr305
+    compile 'mysql:mysql-connector-java:' + project.mysql
+    compile 'com.google.inject:guice:' + project.guice
+
+    testCompile 'junit:junit:4.11'
+}
+
+//////////////////////////////////////////////////////
+// APPLICATION PLUGIN                               //
+//////////////////////////////////////////////////////
+mainClassName = 'org.radicaldelta.ranger.Ranger'
+
+//////////////////////////////////////////////////////
+// BLOSSOM PLUGIN                                   //
+//////////////////////////////////////////////////////
+blossom {
+    def loc = 'src/main/java/org/radicaldelta/ranger/Metadata.java'
+
+    replaceToken '${name}', project.name, loc
+    replaceToken '${description}', project.description, loc
+    replaceToken '${url}', project.url, loc
+    replaceToken '${gitHash}', getGitHash(), loc
+    replaceToken '${version}', ((String)project.version).replaceFirst('^([0-9a-f-]{8}|(unknown-))', ''), loc
+}
+
+//////////////////////////////////////////////////////
+// CHECKSTYLE PLUGIN                                //
+//////////////////////////////////////////////////////
+checkstyle {
+    toolVersion = '6.19'
+    configFile = file('checkstyle.xml')
+    configProperties = [
+            'baseDir': project.projectDir,
+            'suppressions' : file('checkstyle-suppressions.xml'),
+            'severity' : 'error'
+    ]
+    showViolations = true
+}
+
+//////////////////////////////////////////////////////
+// IDEA PLUGIN                                      //
+//////////////////////////////////////////////////////
+task genIdeaTasks(type: Copy) {
+    group 'Build Setup'
+    description 'Generate run tasks for IntelliJ'
+    from rootProject.file('extra/run-tasks/idea')
+    into rootProject.file('.idea/runConfigurations')
+}
+
+//////////////////////////////////////////////////////
+// JAVA PLUGIN                                      //
+//////////////////////////////////////////////////////
+sourceCompatibility = 1.8
+
+javadoc {
+    options {
+        addStringOption (
+                'Xdoclint:none',
+                '-quiet'
+        )
+        charSet = 'UTF-8'
+        encoding = 'UTF-8'
+        links (
+                'https://docs.oracle.com/javase/8/docs/api/'
+        )
+    }
+}
+
+jar {
+    manifest {
+        attributes 'Implementation-Title': project.name,
+                'Implementation-Version': version
+    }
+}
+
+//////////////////////////////////////////////////////
+// LICENSER PLUGIN                                  //
+//////////////////////////////////////////////////////
+license {
+    ext {
+        name = project.name
+        vendor = project.vendor
+        url = project.url
+        inception = project.inception
+        present = LocalDate.now().getYear()
+    }
+
+    include '**/*.java'
+    header = file('HEADER')
+}
+
+//////////////////////////////////////////////////////
+// MAVEN PLUGIN                                     //
+//////////////////////////////////////////////////////
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: mavenLocal().url)
+            pom.project {
+                inceptionYear project.inception
+                licenses {
+                    license {
+                        name 'MIT'
+                        url 'https://opensource.org/licenses/MIT'
+                        distribution 'repo'
+                    }
+                }
+                organization {
+                    name project.vendor
+                    url project.url
+                }
+                issueManagement {
+                    system project.git_issues_name
+                    url project.git_issues_url
+                }
+                scm {
+                    connection project.scm_connection
+                    developerConnection project.scm_connection
+                    url project.git_source
+                }
+            }
+        }
+    }
+}
+
+//////////////////////////////////////////////////////
+// SHADOWJAR PLUGIN                                 //
+//////////////////////////////////////////////////////
+shadowJar {
+    manifest {
+        attributes 'Implementation-Title': project.name,
+                'Implementation-Version': version
+    }
+}
+
+def private String getGitHash() {
+    def process = 'git rev-parse --short HEAD'.execute()
+    process.waitFor()
+    return process.exitValue() ? 'unknown' : process.text.trim()
+}
